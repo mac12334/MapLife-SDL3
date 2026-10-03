@@ -7,6 +7,7 @@
 #include "inputs.hpp"
 #include "components.hpp"
 #include "map.hpp"
+#include "screens.hpp"
 
 #define INIT_FLAGS SDL_INIT_VIDEO
 
@@ -15,9 +16,7 @@ struct GameState {
     SDL_Renderer* rend;
     TTF_Font* font;
     Mouse m;
-    Button* button;
-    TextBox* tbox;
-    TextBox* currentTextBox{nullptr};
+    Screen* testScreen;
 };
 
 SDL_AppResult SDL_AppInit(void** appstate, int, char**) {
@@ -35,11 +34,12 @@ SDL_AppResult SDL_AppInit(void** appstate, int, char**) {
     
     SDL_CreateWindowAndRenderer("Map Life", 600, 600, SDL_WINDOW_RESIZABLE, &state->win, &state->rend);
     state->font = TTF_OpenFont("assets/GalaferaMedium-V4xze.ttf", 15);
-    SDL_Surface* bSurf = nullptr;
-    makeSurfaceFromColor(&bSurf, 60, 60, {255, 0, 0, 255});
-    state->button = new Button(state->rend, bSurf, 10, 10);
-    state->tbox = new TextBox(state->rend, state->font, 10, 80, 20, 100, "Test");
 
+    state->testScreen = new Screen(state->rend, &state->m);
+    SDL_Surface* surf;
+    makeSurfaceFromColor(&surf, 100, 100, {255, 0, 0, 255});
+    state->testScreen->addButton(new Button(state->rend, surf, 10, 10));
+    state->testScreen->addTextBox(new TextBox(state->rend, state->font, 10, 125, 10, 100, "Hello: "));
     SDL_StartTextInput(state->win);
 
     *appstate = state;
@@ -52,22 +52,17 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* e) {
 
     if (e->type == SDL_EVENT_QUIT) return SDL_APP_SUCCESS;
     updateMouse(*e, &state->m);
-    handleTextBox(state->rend, state->font, *e, state->currentTextBox);
+    handleTextBox(state->rend, state->font, *e, state->testScreen->getCurrentTextBox());
 
     return SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppIterate(void* appstate) {
     GameState* state = {static_cast<GameState*>(appstate)};
-
-    updateTextBoxes(&state->m, &state->currentTextBox, 1, state->tbox);
-
+    
     SDL_SetRenderDrawColor(state->rend, 255, 255, 255, 255);
     SDL_RenderClear(state->rend);
-
-    state->button->render(state->rend);
-    if (state->button->update(&state->m)) printf("It Works!\n");
-    state->tbox->render(state->rend);
+    state->testScreen->tick();
 
     SDL_RenderPresent(state->rend);
 
@@ -83,8 +78,7 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result) {
     SDL_DestroyRenderer(state->rend);
     SDL_DestroyWindow(state->win);
 
-    delete state->button;
-    delete state->tbox;
+    destroyScreen(state->testScreen);
     delete state;
 
     SDL_Quit();

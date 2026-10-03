@@ -9,7 +9,8 @@ void makeSurfaceFromColor(SDL_Surface **surf, int width, int height, SDL_Color c
     SDL_SetSurfaceBlendMode(*surf, SDL_BLENDMODE_BLEND);
 }
 
-void handleTextBox(SDL_Renderer* rend, TTF_Font* font, SDL_Event event, TextBox *txtbox) {
+void handleTextBox(SDL_Renderer *rend, TTF_Font *font, SDL_Event event, TextBox *txtbox)
+{
     if (txtbox == nullptr) return;
     switch (event.type) {
         case SDL_EVENT_TEXT_INPUT:
@@ -44,4 +45,10 @@ void updateTextBoxes(Mouse *mouse, TextBox **currentT, int length, ...) {
     }
     if (focused) return;
     *(currentT) = nullptr;
+}
+
+void updateTextBox(Mouse *mouse, TextBox **currentT, TextBox *item) {
+    item->update(mouse);
+    if (item->focused) {*currentT = item;}
+    else {*currentT = nullptr;}
 }

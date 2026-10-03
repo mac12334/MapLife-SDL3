@@ -117,6 +117,10 @@ class Button {
             this->buttonInitMode = BUTTON_SURFACE_INIT;
         }
 
+        bool getPressed() {
+            return this->pressed;
+        }
+
         /*
         Render text into the text texture CALL ONCE!!
 
@@ -176,7 +180,7 @@ class Button {
         The deconstructor assumes that the background texture has been initialized and does not eqaul
         NULL
         */
-        ~Button() {
+        void destroy() {
             if (this->buttonInitMode == BUTTON_SURFACE_INIT) SDL_DestroyTexture(this->backgroundTexture);
             if (this->textTexture != NULL) SDL_DestroyTexture(this->textTexture);
         }
@@ -279,7 +283,7 @@ class TextBox {
             bool yBound = (this->textboxRect.y < mouse->y) && (mouse->y < (this->textboxRect.y + this->textboxRect.h));
 
             if ((xBound && yBound) && mouse->left) this->focused = true;
-            if (!(xBound && yBound) && mouse->left) this->focused = false;
+            else if (!(xBound && yBound) && mouse->left) this->focused = false;
         }
 
         /*
@@ -403,7 +407,7 @@ class TextBox {
         deallocates both the text pointer and the textboxTexture. and assumes both have already
         been initialized and don't equal NULL or nullptr.
         */
-        ~TextBox() {
+        void destroy() {
             free(this->text); // free's the text pointer to release hold of memory
 
             SDL_DestroyTexture(textboxTexture);
@@ -422,5 +426,6 @@ class TextBox {
 
 void handleTextBox(SDL_Renderer*, TTF_Font*, SDL_Event, TextBox*);
 void updateTextBoxes(Mouse*, TextBox**, int, ...);
+void updateTextBox(Mouse*, TextBox**, TextBox*);
 
 #endif
