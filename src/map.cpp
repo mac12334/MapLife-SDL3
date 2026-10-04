@@ -42,8 +42,13 @@ void loadMap(Map *map, const char *_file) {
 
     size_t numItems = s / sizeof(unsigned short);
     fread(buffer, sizeof(buffer), numItems, file);
+
+    int tWidth = map->tileWidth; int tHeight = map->tileHeight;
+    int tColumns = map->tileColumns;
     
     *map = makeMap((int)buffer[0], (int)buffer[1]);
+    map->tileWidth = tWidth; map->tileHeight = tHeight;
+    map->tileColumns = tColumns;
 
     int i = 2;
     for (int y = 0; y < map->height; y++) {
@@ -122,5 +127,6 @@ void modifyMap(int num, Map *map, const Mouse *mouse, int xOff, int yOff) {
     if (mouse->y - yOff < 0) y = -1;
 
     if (!((0 <= x && x < map->width) && (0 <= y && y < map->height))) return;
+
     map->map[y][x] = (mouse->left) ? num + 1 : 0;
 }

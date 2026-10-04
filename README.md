@@ -13,7 +13,7 @@ I originally made the project for SDL2 but when I got to filepicking I realized 
     - One thing to add to this is the ability for each button to do a different functionality.
 
 ## To Do List -
-1. Make editing screen - **not completed**
+1. Make editing screen - **completed**
    - The editing screen edits the current project.
    - Requires Map and file loading and saving
 2. Make menu screen - **not completed**

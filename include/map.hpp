@@ -6,6 +6,10 @@
 #include <SDL3/SDL.h>
 #include "inputs.hpp"
 
+struct Project {
+    char** tilemapsDirs, mapDirs;
+};
+
 struct Map {
     int** map;
     int width, height;

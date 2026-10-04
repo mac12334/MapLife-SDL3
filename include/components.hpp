@@ -39,6 +39,7 @@ class Button {
     public:
         SDL_FRect rect; // rect for bounding texture and collision/button presses
         SDL_FRect textRect; // rect for text texture
+        int index; // the index of the button in button clusters, needs to be set by the developer
 
         /*
         One of the recommended button constructors for for the button class
@@ -48,11 +49,14 @@ class Button {
         @param sourceRect -> the portion of the texture the button will be made from
         @warning DO NOT DESTROY THE TEXTURE UNTIL THE END OF THE PROGRAM
         */
-        Button(SDL_Texture* texture, SDL_FRect destinationRect, SDL_FRect sourceRect = {0, 0, 0, 0}) {
+        Button(SDL_Texture* texture, SDL_FRect destinationRect, SDL_FRect sourceRect = {0, 0, 0, 0}, void (*func)(Button*, void**) = nullptr, void** params = nullptr, int index = 0) {
             this->backgroundTexture = texture;
             this->rect = destinationRect;
             this->textureSourceRect = sourceRect;
             this->buttonInitMode = BUTTON_TEXTURE_INIT;
+
+            this->setCallback(func, params);
+            this->index = index;
         }
 
         /*
@@ -62,17 +66,23 @@ class Button {
         @param surf -> the surface you want to use for the background of the button
         @param x -> the x position of the window
         @param y -> the y position of the window
+        @param func -> the callback function called when using Button::callbackUpdate() defaults to a nullptr.
+        @param params -> a pointer list to all parameters needed in the callback function defaults to a nullptr.
 
-        surf is freed in this method you do not need to free the surface after using this method.
+        @warning surf is freed in this method you do not need to free the surface after using this method.
         If you still wanted to use that surface you can use the SDL_SurfaceCopy function to get
         a copy of the surface passed into this method YOU MUST USE SDL_SurfaceCopy BEFORE CALLING
         THIS METHOD IF YOU STILL WANT THE SURFACE USED.
+
+        If you used memory allocation for params you will need to free that on your own.
         */
-        Button(SDL_Renderer* rend, SDL_Surface* surf, int x, int y) {
+        Button(SDL_Renderer* rend, SDL_Surface* surf, int x, int y, void (*func)(Button*, void**) = nullptr, void** params = nullptr) {
             this->rect = {(float)x, (float)y, (float)surf->w, (float)surf->h};
             this->backgroundTexture = SDL_CreateTextureFromSurface(rend, surf);
             SDL_DestroySurface(surf);
             this->buttonInitMode = BUTTON_SURFACE_INIT;
+
+            this->setCallback(func, params);
         }
 
         /*
@@ -117,6 +127,10 @@ class Button {
             this->buttonInitMode = BUTTON_SURFACE_INIT;
         }
 
+        /*
+        gets if the button is currently being pressed.
+        @return a boolean representing if the button is being clicked at that instance.
+        */
         bool getPressed() {
             return this->pressed;
         }
@@ -160,6 +174,31 @@ class Button {
         }
 
         /*
+        sets the callback function for Button::callbackUpdate().
+
+        @param func -> the callback function used in Button::callbackUpdate().
+        @param params -> the parameter list used in the callback function defaults to a nullptr.
+        @warning if the params were dynamically allocated in memory you need to free the memory on
+        your own.
+        */
+        void setCallback(void (*func)(Button*, void**), void** params = nullptr) {
+            this->callback = func;
+            this->parameters = params;
+        }
+
+        /*
+        This function runs if 
+        */
+        void callbackUpdate(Mouse* mouse) {
+            if (this->callback == nullptr) {
+                printf("no callback function!!\n");
+                return;
+            }
+            if (!this->update(mouse)) return;
+            this->callback(this, this->parameters);
+        }
+
+        /*
         renders the button onto the desired rendering target.
 
         @param rend -> The SDL rendering target
@@ -192,6 +231,9 @@ class Button {
         SDL_FRect textureSourceRect = {0, 0, 0, 0};
 
         uint buttonInitMode;
+
+        void (*callback)(Button*, void**);
+        void** parameters = nullptr;
 };
 
 /*

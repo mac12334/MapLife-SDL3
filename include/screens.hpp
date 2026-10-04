@@ -20,7 +20,7 @@ void renderAndUpdateButton(Button* item, void** parameters) {
     Mouse* mouse = (Mouse*)(*(parameters + 1));
 
     // updates and renders the button
-    if (item->update(mouse)) printf("hello world\n");
+    item->callbackUpdate(mouse);
     item->render(renderer);
 }
 
@@ -82,6 +82,18 @@ class Screen {
         // required to write to the current textbox
         TextBox* getCurrentTextBox() {
             return currentTextBox;
+        }
+
+        int getButtonListLength() {
+            return Linked::getLength(buttonList);
+        }
+
+        Button* getButtonIndex(int i) {
+            return Linked::getIndex(buttonList, i, (Button*)nullptr);
+        }
+
+        int getTextboxListLength() {
+            return Linked::getLength(textboxList);
         }
 
         // adds a button to the button list
