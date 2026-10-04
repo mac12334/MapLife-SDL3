@@ -57,18 +57,14 @@ class Screen {
     Linked::LinkedList<Button*>* buttonList = nullptr;
     Linked::LinkedList<TextBox*>* textboxList = nullptr;
     // parameter lists
-    void** buttonParameters = nullptr;
-    void** txtParameters = nullptr;
+    void** componentParameters = nullptr;
 
     // initialize parameter lists with correct values
     void initParams() {
-        // button parameters
-        *(SDL_Renderer**)(buttonParameters) = renderer;
-        *(Mouse**)(buttonParameters + 1) = mouse;
         // textbox parameters
-        *(SDL_Renderer**)(txtParameters) = renderer;
-        *(Mouse**)(txtParameters + 1) = mouse;
-        *(TextBox***)(txtParameters + 2) = &currentTextBox;
+        *(SDL_Renderer**)(componentParameters) = renderer;
+        *(Mouse**)(componentParameters + 1) = mouse;
+        *(TextBox***)(componentParameters + 2) = &currentTextBox;
     }
 
     public:
@@ -76,13 +72,11 @@ class Screen {
             renderer = rend;
             mouse = m;
 
-            size_t bpLength = sizeof(SDL_Renderer*) + sizeof(Mouse*); // the length of the button parameters
-            size_t tbplength = bpLength + sizeof(TextBox**); // the length of the textbox parameters
+            size_t tbplength = sizeof(SDL_Renderer*) + sizeof(Mouse*) + sizeof(TextBox**); // the length of the textbox parameters
             // allocate the memory for parameter lists
-            buttonParameters = (void**)malloc(bpLength);
-            txtParameters = (void**)malloc(tbplength);
+            componentParameters = (void**)malloc(tbplength);
 
-            initParams(); // initalize the parameter lists
+            initParams(); // initalize the parameter list
         }
 
         // required to write to the current textbox
@@ -102,8 +96,8 @@ class Screen {
 
         // ran every iteration of the app
         void tick() {
-            Linked::doWhile(buttonList, renderAndUpdateButton, buttonParameters);
-            Linked::doWhile(textboxList, renderAndUpdateTextBoxes, txtParameters);
+            Linked::doWhile(buttonList, renderAndUpdateButton, componentParameters);
+            Linked::doWhile(textboxList, renderAndUpdateTextBoxes, componentParameters);
         }
 
         // destroys all the items allocated for the screen
@@ -112,8 +106,7 @@ class Screen {
             Linked::doWhile(textboxList, _destroyTextBox);
             Linked::destroyList(&buttonList);
             Linked::destroyList(&textboxList);
-            free(txtParameters);
-            free(buttonParameters);
+            free(componentParameters);
         }
 };
 
