@@ -11,6 +11,10 @@ I originally made the project for SDL2 but when I got to filepicking I realized 
     - The need for linked lists was so that I could have any amount of buttons and textboxes and needed for the list also textures in the future.
     - This code change was added to make the screens on the to-do list possible.
     - One thing to add to this is the ability for each button to do a different functionality.
+- october 4th, 2026 - added button callback functions and project struct.
+   - Button callback functions - every button has it's own functionality intended so each button holds its own callback function to complete said functionality.
+   - Button parameters - just like with the component parameters the button parameters allow you to pass in as many parameters as you need with void**.
+   - project struct - one thing is that the end goal of MapLife is to allow a user to create projects that require level editing or maps. The project struct allows me to have fluid projects with mutliple different tilemaps or maps in the project. map is another term for level.
 
 ## To Do List -
 1. Make editing screen - **completed**
