@@ -15,12 +15,16 @@ I originally made the project for SDL2 but when I got to filepicking I realized 
    - Button callback functions - every button has it's own functionality intended so each button holds its own callback function to complete said functionality.
    - Button parameters - just like with the component parameters the button parameters allow you to pass in as many parameters as you need with void**.
    - project struct - one thing is that the end goal of MapLife is to allow a user to create projects that require level editing or maps. The project struct allows me to have fluid projects with mutliple different tilemaps or maps in the project. map is another term for level.
+- October 11th, 2026 - added project loading, writing, and closing functions along with setting the maps to be within the project as a linked list and setting the tilemap dirs as a linked list.
+   - project functions - the project is stored within a .MapLife file that in reality is just a .zip file with the changed prefix. This makes it easier to load in old projects because you just have to pick one file and then load it. The file also somewhat preserves directories which allows the application to pick which files to read and write only the map binary files.
+   - Linked Lists - for both the tilemap directories and the maps you need to be able to have 'unlimited' ability to make as many maps or tilemaps for one project.
+   - something to add in the future - The ability to make and pick maps while in the project editor. The project struct linked lists build up to that but it isn't yet realized. Also the ability to have .json file hold the tilemap directories in a list. Also modify map binaries slightly to allow for the first item to tell the project which tilemap is being used.
 
 ## To Do List -
 1. Make editing screen - **completed**
    - The editing screen edits the current project.
    - Requires Map and file loading and saving
-2. Make menu screen - **not completed**
+2. Make menu screen - **complete**
    - The menu gives you options to load previous project
    - make new projects
 3. Make transition screen from menu to edit - **not completed**

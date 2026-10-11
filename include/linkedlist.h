@@ -60,6 +60,35 @@ namespace Linked {
         }
         func(currentItem->value, parameterArray);
     }
+
+    /*
+    does some functionality while iterating through every item of the list. Provides the callback function refrence to the items position in the list.
+
+    - function - you function should look something like so - void funcName(T value, void** parameters) {// logic}.
+
+    - parameters - when you need to have parameters accessed through the array use a void* array (also known as 
+    a void** this will allow you to have multiple parameters of different types).
+
+    - index - provides the function with the index of the item.
+
+
+    @param list -> a pointer to the Linked list you want to iterate through
+    @param func -> a function pointer that will be used for every item in the array
+    @param parameterArray -> the void* array that holds every needed parameter for your function
+    */
+    template <typename T>
+    void doWhileWithIndex(LinkedList<T>* list, void (*func)(T, int, void**), void** parameterArray = nullptr) {
+        if (list == nullptr) return;
+
+        LinkedList<T>* currentItem = list;
+        int index = 0;
+        while (currentItem->nextItem != nullptr) {
+            func(currentItem->value, index, parameterArray);
+            currentItem = currentItem->nextItem;
+            index++;
+        }
+        func(currentItem->value, index, parameterArray);
+    }
     
     /*
     Removes an item from the end of the list. This function deallocated the memory

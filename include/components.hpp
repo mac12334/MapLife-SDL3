@@ -224,7 +224,7 @@ class Button {
             if (this->textTexture != NULL) SDL_DestroyTexture(this->textTexture);
         }
     private:
-        bool pressed = false; // ensures the button function does not happen multiple times
+        bool pressed = true; // ensures the button function does not happen multiple times
         SDL_Texture* backgroundTexture; // the texture that is used for the back of the button
         SDL_Texture* textTexture = NULL; // the texture that is for the text if text is required
 

@@ -68,6 +68,10 @@ class Screen {
     }
 
     public:
+        bool deleteLists = false;
+        void (*transitionFunction)(void*);
+        void* state;
+
         Screen(SDL_Renderer* rend, Mouse* m) {
             renderer = rend;
             mouse = m;
@@ -110,6 +114,17 @@ class Screen {
         void tick() {
             Linked::doWhile(buttonList, renderAndUpdateButton, componentParameters);
             Linked::doWhile(textboxList, renderAndUpdateTextBoxes, componentParameters);
+
+            if (this->deleteLists) {
+                this->destroyLists();
+                this->transitionFunction(state);
+                this->transitionFunction = nullptr;
+                this->deleteLists = false;
+            }
+        }
+
+        void freeCompParams() {
+            free(componentParameters);
         }
 
         // destroys all the items allocated for the screen
@@ -118,13 +133,13 @@ class Screen {
             Linked::doWhile(textboxList, _destroyTextBox);
             Linked::destroyList(&buttonList);
             Linked::destroyList(&textboxList);
-            free(componentParameters);
         }
 };
 
 // deallocates all memory allocated for the screen
 void destroyScreen(Screen* screen) {
     screen->destroyLists();
+    screen->freeCompParams();
     delete screen;
 }
 

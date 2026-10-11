@@ -1,5 +1,7 @@
 #include "map.hpp"
 
+typedef unsigned short ushort;
+
 void writeMap(Map *map, const char *_file) {
     // open the file in write mode
     FILE* file = fopen(_file, "wb");
@@ -62,6 +64,127 @@ void loadMap(Map *map, const char *_file) {
     fclose(file);
 }
 
+ushort* createMapBuffer(Map* map) {
+    int area = (map->width * map->height);
+
+    size_t size = (sizeof(ushort) * area) + (sizeof(ushort) * 2);
+    ushort* buffer = (ushort*)malloc(size);
+
+    buffer[0] = (ushort)map->width;
+    buffer[1] = (ushort)map->height;
+    
+    int x, y = 0;
+    for (int i = 0; i < area; i++) {
+        y = i / map->width; x = i % map->width;
+        buffer[i + 2] = (ushort)map->map[y][x];
+    }
+
+    return buffer;
+}
+
+void writeProject(Project *project, const char *zipName) {
+    int err;
+    zip_t* archive = zip_open(zipName, ZIP_CREATE, &err);
+
+    void (*func)(Map*, int, void**) = [](Map* map, int index, void** params) -> void {
+        // get archive
+        zip_t* arch = *(zip_t**)(params);
+
+        // create the buffer
+        ushort* buffer = createMapBuffer(map);
+        size_t s = (sizeof(ushort) * buffer[0] * buffer[1]) + (sizeof(ushort) * 2);
+
+        // write the buffer onto a source
+        zip_source_t* source = zip_source_buffer(arch, buffer, s, 1);
+
+        // add the source to the zip file
+        char name[13];
+        snprintf(name, sizeof(char) * 13, "maps/map%d", index);
+        zip_file_add(arch, name, source, ZIP_FL_OVERWRITE);
+
+        // close the source
+        zip_source_close(source);
+    };
+
+    Linked::doWhileWithIndex(project->mapList, func, (void**)&archive);
+
+    zip_close(archive);
+}
+
+void makeMapFromFile(Project* project, zip_file_t* file, size_t fileSize) {
+    Map* map = (Map*)malloc(sizeof(Map));
+    
+    // make file buffer
+    ushort* buffer = (ushort*)malloc(fileSize);
+    zip_fread(file, buffer, fileSize);
+    
+    // make map from said buffer
+    int w = (int)*(buffer + 0);
+    int h = (int)*(buffer + 1);
+    *map = makeMap(w, h);
+    
+    int index = 2;
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            map->map[y][x] = buffer[index];
+            index++;
+        }
+    }
+
+    Linked::addItem<Map*>(&project->mapList, map);
+}
+
+void loadProject(Project *project, const char *zipName) {
+    int err;
+    zip_t* archive = zip_open(zipName, ZIP_CREATE, &err);
+
+    
+    // list out all files within the zip file and store map indexes
+    int numFiles = zip_get_num_entries(archive, ZIP_FL_UNCHANGED);
+    for (int i = 0; i < numFiles; i++) {
+        // get the stats
+        zip_stat_t stat;
+        zip_stat_init(&stat);
+        if (zip_stat_index(archive, i, 0, &stat) != 0) continue;
+        
+        // only care about files with prefic maps/
+        if (strstr(stat.name, "maps/") == NULL) continue;
+        
+        // open file from index list
+        zip_file_t* file = zip_fopen_index(archive, i, 0);
+        
+        //make map
+        makeMapFromFile(project, file, stat.size);
+
+        // close file
+        zip_fclose(file);
+    }
+
+    zip_close(archive);
+}
+
+void makeDefaultProject(Project *project, int width, int height, int def) {
+    Map* map = (Map*)malloc(sizeof(Map));
+    *map = makeMap(width, height, def);
+    Linked::addItem(&project->mapList, map);
+}
+
+void _freeMapList(Map* map, void**) {
+    freeMap(map);
+    free(map);
+}
+
+void _freeTilemapList(char* tilemapDir, void**) {
+    free(tilemapDir);
+}
+
+void freeProject(Project *project) {
+    Linked::doWhile(project->mapList, _freeMapList);
+    Linked::doWhile(project->tilemapDirs, _freeTilemapList);
+    Linked::destroyList(&project->tilemapDirs);
+    Linked::destroyList(&project->mapList);
+}
+
 Map makeMap(int width, int height, int def)
 {
     int** map = (int**)malloc(height * sizeof(int*));
@@ -97,6 +220,7 @@ void printMap(const Map* map) {
 }
 
 void renderMap(SDL_Renderer *render, SDL_Texture *texture, const Map *map, int xOff, int yOff, bool grid) {
+    if (map == nullptr) return;
     SDL_FRect source = {0, 0, (float)map->tileWidth, (float)map->tileHeight};
     SDL_FRect dest = {(float)xOff, (float)yOff, (float)source.w * 5, (float)source.h * 5};
 
@@ -118,6 +242,7 @@ void renderMap(SDL_Renderer *render, SDL_Texture *texture, const Map *map, int x
 }
 
 void modifyMap(int num, Map *map, const Mouse *mouse, int xOff, int yOff) {
+    if (map == nullptr) return;
     if (!mouse->left && !mouse->right) return;
     // figure out the x and y index
     int x = (mouse->x - xOff) / (map->tileWidth*5);

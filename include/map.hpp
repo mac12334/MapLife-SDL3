@@ -3,12 +3,11 @@
 #define MAP_HPP
 
 #include <iostream>
+#include <zip/zip.h>
 #include <SDL3/SDL.h>
-#include "inputs.hpp"
 
-struct Project {
-    char** tilemapsDirs, mapDirs;
-};
+#include "inputs.hpp"
+#include "linkedlist.h"
 
 struct Map {
     int** map;
@@ -17,15 +16,27 @@ struct Map {
     int tileColumns;
 };
 
-void writeMap(Map*, const char*);
-void loadMap(Map*, const char*);
+struct Project {
+    Map* currentMap;
+    Linked::LinkedList<Map*>* mapList;
+    Linked::LinkedList<char*>* tilemapDirs;
+};
 
-Map makeMap(int, int, int = 0);
-void freeMap(Map*);
 
-void printMap(const Map*);
+void writeMap(Map* map, const char* fileName);
+void loadMap(Map* map, const char* fileName);
 
-void renderMap(SDL_Renderer*, SDL_Texture*, const Map*, int = 0, int = 0, bool = false);
-void modifyMap(int, Map*, const Mouse*, int = 0, int = 0);
+void writeProject(Project* project, const char* zipName);
+void loadProject(Project* project, const char* zipName);
+void makeDefaultProject(Project* project, int width, int height, int def=0);
+void freeProject(Project* project);
+
+Map makeMap(int width, int height, int def = 0);
+void freeMap(Map* map);
+
+void printMap(const Map* map);
+
+void renderMap(SDL_Renderer* render, SDL_Texture* texture, const Map* map, int xOff = 0, int yOff = 0, bool grid = false);
+void modifyMap(int num, Map* map, const Mouse* mouse, int xOff = 0, int yOff = 0);
 
 #endif
