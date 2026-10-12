@@ -41,11 +41,11 @@ void renderAndUpdateTextBoxes(TextBox* txtbox, void** parameters) {
 
 void _destroyTextBox(TextBox* txtbox, void**) {
     txtbox->destroy(); // deallocate any memory the textbox used
-    delete txtbox; // delete the textbox because we used new
+    free(txtbox);
 }
 void _destroyButton(Button* button, void**) {
     button->destroy(); // deallocate any memory the button used
-    delete button; // delete the button because we used new
+    free(button);
 }
 
 class Screen {

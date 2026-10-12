@@ -19,6 +19,10 @@ I originally made the project for SDL2 but when I got to filepicking I realized 
    - project functions - the project is stored within a .MapLife file that in reality is just a .zip file with the changed prefix. This makes it easier to load in old projects because you just have to pick one file and then load it. The file also somewhat preserves directories which allows the application to pick which files to read and write only the map binary files.
    - Linked Lists - for both the tilemap directories and the maps you need to be able to have 'unlimited' ability to make as many maps or tilemaps for one project.
    - something to add in the future - The ability to make and pick maps while in the project editor. The project struct linked lists build up to that but it isn't yet realized. Also the ability to have .json file hold the tilemap directories in a list. Also modify map binaries slightly to allow for the first item to tell the project which tilemap is being used.
+- October 11th, 2026 - changed the way buttons were defined. instead of defined using new keyword they are dynamically allocated using malloc making modifying and changing values easier.
+   - old way - I originally used the new keyword for ease of use, but as the project got larger it soon was seen harder to use the new keyword when defining the buttons and textboxes in a one line addition to the linked list. I did use the delete keyword on all components after using new, I'm not a memory monster after all.
+   - the new way - Now I will be using malloc to get a pointer to the gui component this allows me to use multiple lines to modify the component until putting it within the screen. then finally freed by the destroyLists method.
+   - Why? - the main reason was because of working on the project loading and writing, I subconsciously used malloc without thinking about it, so I thought that it would probably be good to be used on screen components for better control over the components. I also knwo I could've used new outside of the add method for the screen but I think since I used malloc most often it makes my code easier to develop since everything uses the same memory allocation method.
 
 ## To Do List -
 1. Make editing screen - **completed**
@@ -27,7 +31,7 @@ I originally made the project for SDL2 but when I got to filepicking I realized 
 2. Make menu screen - **complete**
    - The menu gives you options to load previous project
    - make new projects
-3. Make transition screen from menu to edit - **not completed**
+3. Make transition screen from menu to edit - **in progress**
    - The transition screen allows you to pick which tilemap you want to use
    - input the size of each tile
 4. Develope project structure - **not completed**

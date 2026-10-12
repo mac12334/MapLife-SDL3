@@ -27,10 +27,16 @@ struct GameState {
 };
 
 void makeEditScreen(void*);
+void makeCreateProjectScreen(void* state);
 
 void openProject(void* userData, const char* const* fileList, int filter) {
     if (fileList == nullptr) {
-        printf("No files picked\n");
+        printf("something bad happened\n");
+        return;
+    }
+
+    if (*fileList == nullptr) {
+        printf("no files selected\n");
         return;
     }
 
@@ -61,15 +67,18 @@ void initializeButtonParameters(GameState* state) {
     *(GameState**)(state->buttonParameters + ButtonIndex_GameState) = state;
 }
 
-void makeMenuScreen(GameState* gamestate) {
+void makeMenuScreen(void* state) {
+    GameState* gamestate = {static_cast<GameState*>(state)};
     SDL_Surface* surf;
     makeSurfaceFromColor(&surf, 100, 50, {255, 0, 0, 255});
     SDL_Surface* nSurf;
     makeSurfaceFromColor(&nSurf, 100, 50, {255, 0, 0, 255});
 
+    gamestate->project->currentMap = nullptr;
+
     void (*func)(Button*, void**) = [](Button* button, void** parameters) -> void {
         SDL_Window* win = *(SDL_Window**)(parameters + ButtonIndex_Window);
-        SDL_ShowOpenFileDialog(openProject, parameters, win, nullptr, 0, "/User/that_nerdy_dino/Documents/", false);
+        SDL_ShowOpenFileDialog(openProject, parameters, win, nullptr, 0, NULL, false);
     };
 
     void (*nProject)(Button*, void**) = [](Button* button, void** parameters) -> void {
@@ -79,13 +88,50 @@ void makeMenuScreen(GameState* gamestate) {
         makeDefaultProject(project, 10, 10);
         project->currentMap = Linked::getIndex(project->mapList, 0, (Map*)nullptr);
         screen->deleteLists = true;
-        screen->transitionFunction = makeEditScreen;
+        screen->transitionFunction = makeCreateProjectScreen;
     };
 
-    gamestate->testScreen->addButton(new Button(gamestate->rend, surf, 10, 10, func, gamestate->buttonParameters));
-    gamestate->testScreen->getButtonIndex(0)->renderText(gamestate->rend, gamestate->font, "load", {255, 255, 255, 255});
-    gamestate->testScreen->addButton(new Button(gamestate->rend, nSurf, 10, 70, nProject, gamestate->buttonParameters));
-    gamestate->testScreen->getButtonIndex(1)->renderText(gamestate->rend, gamestate->font, "new", {255, 255, 255, 255});
+    // load button
+    Button* loadButton = (Button*)malloc(sizeof(Button));
+    loadButton->defineButton(gamestate->rend, surf, 10, 10);
+    loadButton->setCallback(func, gamestate->buttonParameters);
+    loadButton->renderText(gamestate->rend, gamestate->font, "load", {255, 255, 255, 255});
+    gamestate->testScreen->addButton(loadButton);
+
+    // create/new button
+    Button* createButton = (Button*)malloc(sizeof(Button));
+    createButton->defineButton(gamestate->rend, nSurf, 10, 70);
+    createButton->setCallback(nProject, gamestate->buttonParameters);
+    createButton->renderText(gamestate->rend, gamestate->font, "new", {255, 255, 255, 255});
+    gamestate->testScreen->addButton(createButton);
+}
+
+void makeCreateProjectScreen(void* state) {
+    GameState* gamestate = {static_cast<GameState*>(state)};
+
+    SDL_Surface* cancelSurface = nullptr;
+    makeSurfaceFromColor(&cancelSurface, 100, 50, {255, 0, 0, 255});
+
+    void (*cancelFunc)(Button*, void**) = [](Button* button, void** parameters) -> void {
+        Project* project = *(Project**)(parameters + ButtonIndex_Project);
+        Screen* screen = *(Screen**)(parameters + ButtonIndex_Screen);
+
+        freeProject(project);
+        screen->deleteLists = true;
+        screen->transitionFunction = makeMenuScreen;
+    };
+
+    // cancel button
+    Button* cancelButton = (Button*)malloc(sizeof(Button));
+    cancelButton->defineButton(gamestate->rend, cancelSurface, 10, 200);
+    cancelButton->setCallback(cancelFunc, gamestate->buttonParameters);
+    cancelButton->renderText(gamestate->rend, gamestate->font, "cancel", {255, 255, 255, 255});
+    gamestate->testScreen->addButton(cancelButton);
+
+    // width textbox
+    TextBox* widthTextbox = (TextBox*)malloc(sizeof(TextBox));
+    widthTextbox->defineTextBox(gamestate->rend, gamestate->font, 10, 70, 10, 50, "width: ");
+    gamestate->testScreen->addTextBox(widthTextbox);
 }
 
 void makeEditScreen(void* appState) {
@@ -121,15 +167,24 @@ void makeEditScreen(void* appState) {
 
     for (int index = 0; index < numTiles; index++) {
         tileRect.x = (index % colums) * tileSize; tileRect.y = (index / colums) * tileSize;
-        renderRect.x = (renderStartX) + (index % renderColumn) * (renderSize + renderMargin); renderRect.y = (renderStartY) + (index / renderColumn) * (renderSize + renderMargin);
+        renderRect.x = (renderStartX) + (index % renderColumn) * (renderSize + renderMargin); 
+        renderRect.y = (renderStartY) + (index / renderColumn) * (renderSize + renderMargin);
 
-        gamestate->testScreen->addButton(new Button(gamestate->tileMapTexture, renderRect, tileRect, func, gamestate->buttonParameters, index));
+        // allocate tile button
+        Button* tilebutton = (Button*)malloc(sizeof(Button));
+        tilebutton->defineButton(gamestate->tileMapTexture, renderRect, tileRect);
+        tilebutton->setCallback(func, gamestate->buttonParameters);
+        tilebutton->index = index;
+
+        gamestate->testScreen->addButton(tilebutton);
     }
     
     SDL_Surface* loadSurface = nullptr;
     makeSurfaceFromColor(&loadSurface, 90, 35, {150, 150, 150, 255});
     SDL_Surface* saveSurface = nullptr;
     makeSurfaceFromColor(&saveSurface, 90, 35, {150, 150, 150, 255});
+    SDL_Surface* menuSurface = nullptr;
+    makeSurfaceFromColor(&menuSurface, 90, 35, {150, 150, 150, 255});
     
     void (*loadFunc)(Button*, void**) = [](Button* button, void** parmaters)-> void {
         Project* project = *(Project**)(parmaters + ButtonIndex_Project);
@@ -150,13 +205,32 @@ void makeEditScreen(void* appState) {
         Project* project = *(Project**)(parmaters + ButtonIndex_Project);
         writeProject(project, "test-project.MapLife");
     };
+    void (*menuFunc)(Button*, void**) = [](Button* button, void** parameters) -> void {
+        Project* project = *(Project**)(parameters + ButtonIndex_Project);
+        Screen* screen = *(Screen**)(parameters + ButtonIndex_Screen);
 
-    gamestate->testScreen->addButton(new Button(gamestate->rend, loadSurface, 10, 6, loadFunc, gamestate->buttonParameters));
-    gamestate->testScreen->addButton(new Button(gamestate->rend, saveSurface, 120, 6, saveFunc, gamestate->buttonParameters));
-    
-    int length = gamestate->testScreen->getButtonListLength();
-    gamestate->testScreen->getButtonIndex(length - 2)->renderText(gamestate->rend, gamestate->font, "load", {255, 255, 255, 255});
-    gamestate->testScreen->getButtonIndex(length - 1)->renderText(gamestate->rend, gamestate->font, "save", {255, 255, 255, 255});
+        freeProject(project);
+        screen->deleteLists = true;
+        screen->transitionFunction = makeMenuScreen;
+    };
+    // load button
+    Button* loadButton = (Button*)malloc(sizeof(Button));
+    loadButton->defineButton(gamestate->rend, loadSurface, 10, 6);
+    loadButton->setCallback(loadFunc, gamestate->buttonParameters);
+    loadButton->renderText(gamestate->rend, gamestate->font, "load", {255, 255, 255, 255});
+    gamestate->testScreen->addButton(loadButton);
+    // save button
+    Button* saveButton = (Button*)malloc(sizeof(Button));
+    saveButton->defineButton(gamestate->rend, saveSurface, 110, 6);
+    saveButton->setCallback(saveFunc, gamestate->buttonParameters);
+    saveButton->renderText(gamestate->rend, gamestate->font, "save", {255, 255, 255, 255});
+    gamestate->testScreen->addButton(saveButton);
+    // menu button
+    Button* menuButton = (Button*)malloc(sizeof(Button));
+    menuButton->defineButton(gamestate->rend, menuSurface, 210, 6);
+    menuButton->setCallback(menuFunc, gamestate->buttonParameters);
+    menuButton->renderText(gamestate->rend, gamestate->font, "menu", {255, 255, 255, 255});
+    gamestate->testScreen->addButton(menuButton);
 }
 
 SDL_AppResult SDL_AppInit(void** appstate, int, char**) {
