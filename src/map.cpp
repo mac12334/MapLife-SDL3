@@ -106,9 +106,33 @@ void writeProject(Project *project, const char *zipName) {
         zip_source_close(source);
     };
 
+    cJSON* projectProperties = cJSON_CreateObject();
+    cJSON* array = cJSON_AddArrayToObject(projectProperties, "tilemapDirs");
+
+    void (*addDir)(char*, void**) = [](char* directory, void** params) -> void {
+        cJSON* jsonArray = *(cJSON**)(params);
+        cJSON* item = cJSON_CreateString(directory);
+        cJSON_AddItemToArray(jsonArray, item);
+    };
+
     Linked::doWhileWithIndex(project->mapList, func, (void**)&archive);
+    Linked::doWhile(project->tilemapDirs, addDir, (void**)(&array));
+
+    // write the json file into the zip archive
+    // convert the json struct into a c string
+    char* jsonContents = cJSON_Print(projectProperties);
+    
+    // write the c string json into the project file
+    size_t jsonSize = (strlen(jsonContents) * sizeof(char)) + sizeof(char);
+    zip_source* propSource = zip_source_buffer(archive, jsonContents, jsonSize, 0);
+
+    zip_file_add(archive, "properties.json", propSource, ZIP_FL_OVERWRITE);
+
+    zip_source_close(propSource);
 
     zip_close(archive);
+    cJSON_free(jsonContents);
+    cJSON_Delete(projectProperties);
 }
 
 void makeMapFromFile(Project* project, zip_file_t* file, size_t fileSize) {
@@ -131,13 +155,38 @@ void makeMapFromFile(Project* project, zip_file_t* file, size_t fileSize) {
         }
     }
 
+    free(buffer);
     Linked::addItem<Map*>(&project->mapList, map);
+}
+
+void loadTileMaps(Project* project, zip_file* file, size_t fileSize) {
+    char* buffer = (char*)malloc(fileSize);
+
+    zip_fread(file, buffer, fileSize);
+
+    cJSON* propJson = cJSON_Parse(buffer);
+    cJSON* array = cJSON_GetObjectItem(propJson, "tilemapDirs");
+    int length = cJSON_GetArraySize(array);
+    for (int i = 0; i < length; i++) {
+        cJSON* item = cJSON_GetArrayItem(array, i);
+        char* sitem = cJSON_GetStringValue(item);
+
+        size_t size = (sizeof(char) * strlen(sitem)) + sizeof(char);
+        char* directory = (char*)malloc(size);
+
+        strcpy(directory, sitem);
+        Linked::addItem(&project->tilemapDirs, directory);
+    }
+
+    free(buffer);
+    cJSON_Delete(propJson);
 }
 
 void loadProject(Project *project, const char *zipName) {
     int err;
     zip_t* archive = zip_open(zipName, ZIP_CREATE, &err);
 
+    size_t propFileSize;
     
     // list out all files within the zip file and store map indexes
     int numFiles = zip_get_num_entries(archive, ZIP_FL_UNCHANGED);
@@ -147,7 +196,10 @@ void loadProject(Project *project, const char *zipName) {
         zip_stat_init(&stat);
         if (zip_stat_index(archive, i, 0, &stat) != 0) continue;
         
-        // only care about files with prefic maps/
+        if (strcmp(stat.name, "properties.json") == 0) {
+            propFileSize = stat.size;
+            continue;
+        }
         if (strstr(stat.name, "maps/") == NULL) continue;
         
         // open file from index list
@@ -159,6 +211,12 @@ void loadProject(Project *project, const char *zipName) {
         // close file
         zip_fclose(file);
     }
+
+    zip_file_t* propFile = zip_fopen(archive, "properties.json", 0);
+
+    loadTileMaps(project, propFile, propFileSize);
+
+    zip_fclose(propFile);
 
     zip_close(archive);
 }

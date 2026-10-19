@@ -236,6 +236,13 @@ class Button {
         void** parameters = nullptr;
 };
 
+enum TextBoxType {
+    TextBoxType_ANY_TEXT,
+    TextBoxType_ONLY_NUMBERS,
+    TextBoxType_NO_SPACES,
+    TextBoxType_ONLY_ALPHANUMERIC,
+};
+
 /*
 TextBox is a class that allows a user to write inputs into a box and then get the value when needed
 */
@@ -313,6 +320,25 @@ class TextBox {
         }
 
         /*
+        sets the textbox type used to define what type of text can enter the textbox.
+
+        eg. -
+
+        1. TextBoxType_ANY_TEXT - any type of text can enter the textbox.
+
+        2. TextBoxType_ONLY_NUMBERS - only decimal numbers can enter the textbox.
+
+        3. TextBoxType_NO_SPACES - spaces are not allowed, good for naming files or items that cannot have spaces.
+
+        4. TextBoxType_ONLY_ALPHANUMERIC - only letters are allowed and any special characters or decimal characters are not allowed.
+
+        @param tType -> stands for textbox type, the type you want to set the textbox to.
+        */
+        void setTextBoxType(uint tType) {
+            textboxType = tType;
+        }
+
+        /*
         this method checks if you have clicked on the textbox.
         this method changes the attribute 'focused' to true or false depending on whether or not you are
         click on the textbox. If you click on the textbox 'focused' is set to true, if you click off of
@@ -378,6 +404,7 @@ class TextBox {
         void concatText(const char* s2) {
             size_t otherLength = strlen(s2);
             if ((this->textLength() + otherLength) >= this->maxCharLength) return;
+            if (!canConcate(s2)) return;
             
             // check if the first character is = to ' ' do special function
             if (this->text[0] == ' ') this->text[0] = '\0';
@@ -457,6 +484,21 @@ class TextBox {
             if (this->IDTexture != NULL) SDL_DestroyTexture(this->IDTexture);
         }
     private:
+        bool canConcate(const char* str) {
+            switch (textboxType) {
+                case TextBoxType_ANY_TEXT:
+                    return true;
+                case TextBoxType_ONLY_NUMBERS:
+                    return isdigit(*str);
+                case TextBoxType_NO_SPACES:
+                    return *str != ' ';
+                case TextBoxType_ONLY_ALPHANUMERIC:
+                    return isalnum(*str);
+                default:
+                    return true;
+            }
+        }
+
         SDL_Texture* textboxTexture; // holds the text texture of the textbox
         SDL_Surface* textboxSurf; // because the text changes constantly this allows for less repeatability
         SDL_Texture* IDTexture = NULL;
@@ -464,6 +506,8 @@ class TextBox {
         char* text = nullptr; // can be any length
         int minBoundingWidth; // minimum width of the bounding rectangle.
         int maxCharLength; // maximum length of the text string
+
+        uint textboxType = TextBoxType_ANY_TEXT;
 };
 
 void handleTextBox(SDL_Renderer*, TTF_Font*, SDL_Event, TextBox*);

@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <zip/zip.h>
+#include <cjson/cJSON.h>
 #include <SDL3/SDL.h>
 
 #include "inputs.hpp"

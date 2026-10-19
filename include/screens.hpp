@@ -100,6 +100,10 @@ class Screen {
             return Linked::getLength(textboxList);
         }
 
+        TextBox* getTextboxIndex(int i) {
+            return Linked::getIndex(textboxList, i, (TextBox*)nullptr);
+        }
+
         // adds a button to the button list
         void addButton(Button* button) {
             Linked::addItem(&buttonList, button);
