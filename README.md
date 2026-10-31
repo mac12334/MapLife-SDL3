@@ -27,6 +27,10 @@ I originally made the project for SDL2 but when I got to filepicking I realized 
    - How the tilemap is stored - the tilemap is stored as a directory towards the tilemap image. The tilemap is located in the zip file ('.MapLife' file), in properties.json. This allows for the ability to store multiple tilemap directories in the future and store other properties like tile size and the number of columns in the tilemap.
    - What needs to be added - the ability to change the number of columns used and to change the number of tiles used in the tilemap. essentially anything used to grab the tiles from the image needs to be a property of the project. possibly the property of the project could be another linked list that stores a tilemap property struct, this struct could also hold the tilemap directory.
    - another addition - we still need the ability to have multiple maps in the project but we are building towards that by using linked lists for now.
+- October 30th, 2026 - Cleaned up the code a little bit
+   - Screen.cpp vs Screens.cpp - I know it's not the best practice for naming two files basically the same name, but for this it kinda works out. ```Screen.cpp``` handles the definition and handling of the ```Screen``` class. ```Screens.cpp``` handles all the transitions between screens, and the definition of ```GameState``` which may be moved in the future.
+   - Why? - I think a good rule of thumb when programming in any language is to look at your code and check how long it is, and if all the items in a file are related. I realized that my ```main.cpp``` file was too large, and therfore difficult to scale, and all the items were not necasserily related. I moved all of the screen construction functions to a different file to make the code easier to read and maintain.
+   - What needs to happen in the future - The naming of the two files is confusing, I need to think of more distinct names to ensure the project doesn't get too confusing. I also need to add more comments so I can always come back and know what is happening.
 
 ## To Do List -
 1. Make editing screen - **completed**

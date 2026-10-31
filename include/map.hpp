@@ -15,6 +15,13 @@ struct Map {
     int width, height;
     int tileWidth, tileHeight;
     int tileColumns;
+    int tilemapIndex;
+};
+
+struct TileMap {
+    int width, height;
+    int numColumns;
+    char* directory;
 };
 
 struct Project {

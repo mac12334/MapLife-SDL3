@@ -4,147 +4,38 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <SDL3_image/SDL_image.h>
 
-#include "inputs.hpp"
-#include "components.hpp"
-#include "linkedlist.h"
+#include <screen.hpp>
+#include <map.hpp>
+#include <constants.hpp>
 
-void renderAndUpdateButton(Button* item, void** parameters) {
-    if (parameters == nullptr) { // this function requires paramters to run
-        printf("no parameters\n");
-        return;
-    }
+#define ALLOC_BUTTON() ((Button*)malloc(sizeof(Button)))
+#define ALLOC_TEXTBOX() ((TextBox*)malloc(sizeof(TextBox)))
 
-    // grabs the needed paramters from the list
-    SDL_Renderer* renderer = (SDL_Renderer*)(*(parameters));
-    Mouse* mouse = (Mouse*)(*(parameters + 1));
-
-    // updates and renders the button
-    item->callbackUpdate(mouse);
-    item->render(renderer);
-}
-
-void renderAndUpdateTextBoxes(TextBox* txtbox, void** parameters) {
-    if (parameters == nullptr) { // this function requirs parameters
-        printf("no parameters\n");
-        return;
-    }
-    // grab the needed parameters
-    SDL_Renderer* renderer = (SDL_Renderer*)(*(parameters));
-    Mouse* mouse = (Mouse*)(*(parameters + 1));
-    TextBox** currentTextBox = (TextBox**)(*(parameters + 2));
-
-    // update and render the textbox
-    updateTextBox(mouse, currentTextBox, txtbox);
-    txtbox->render(renderer);
-}
-
-void _destroyTextBox(TextBox* txtbox, void**) {
-    txtbox->destroy(); // deallocate any memory the textbox used
-    free(txtbox);
-}
-void _destroyButton(Button* button, void**) {
-    button->destroy(); // deallocate any memory the button used
-    free(button);
-}
-
-class Screen {
-    // needed parameters for rendering and updating the components
-    SDL_Renderer* renderer;
-    Mouse* mouse;
-    TextBox* currentTextBox = nullptr;
-    // component lists
-    Linked::LinkedList<Button*>* buttonList = nullptr;
-    Linked::LinkedList<TextBox*>* textboxList = nullptr;
-    // parameter lists
-    void** componentParameters = nullptr;
-
-    // initialize parameter lists with correct values
-    void initParams() {
-        // textbox parameters
-        *(SDL_Renderer**)(componentParameters) = renderer;
-        *(Mouse**)(componentParameters + 1) = mouse;
-        *(TextBox***)(componentParameters + 2) = &currentTextBox;
-    }
-
-    public:
-        bool deleteLists = false;
-        void (*transitionFunction)(void*);
-        void* state;
-
-        Screen(SDL_Renderer* rend, Mouse* m) {
-            renderer = rend;
-            mouse = m;
-
-            size_t tbplength = sizeof(SDL_Renderer*) + sizeof(Mouse*) + sizeof(TextBox**); // the length of the textbox parameters
-            // allocate the memory for parameter lists
-            componentParameters = (void**)malloc(tbplength);
-
-            initParams(); // initalize the parameter list
-        }
-
-        // required to write to the current textbox
-        TextBox* getCurrentTextBox() {
-            return currentTextBox;
-        }
-
-        int getButtonListLength() {
-            return Linked::getLength(buttonList);
-        }
-
-        Button* getButtonIndex(int i) {
-            return Linked::getIndex(buttonList, i, (Button*)nullptr);
-        }
-
-        int getTextboxListLength() {
-            return Linked::getLength(textboxList);
-        }
-
-        TextBox* getTextboxIndex(int i) {
-            return Linked::getIndex(textboxList, i, (TextBox*)nullptr);
-        }
-
-        // adds a button to the button list
-        void addButton(Button* button) {
-            Linked::addItem(&buttonList, button);
-        }
-
-        // adds a textbox to the textbox list
-        void addTextBox(TextBox*  txtBox) {
-            Linked::addItem(&textboxList, txtBox);
-        }
-
-        // ran every iteration of the app
-        void tick() {
-            Linked::doWhile(buttonList, renderAndUpdateButton, componentParameters);
-            Linked::doWhile(textboxList, renderAndUpdateTextBoxes, componentParameters);
-
-            if (this->deleteLists) {
-                this->destroyLists();
-                this->transitionFunction(state);
-                this->transitionFunction = nullptr;
-                this->deleteLists = false;
-            }
-        }
-
-        void freeCompParams() {
-            free(componentParameters);
-        }
-
-        // destroys all the items allocated for the screen
-        void destroyLists() {
-            Linked::doWhile(buttonList, _destroyButton);
-            Linked::doWhile(textboxList, _destroyTextBox);
-            Linked::destroyList(&buttonList);
-            Linked::destroyList(&textboxList);
-        }
+struct GameState {
+    SDL_Window* win;
+    SDL_Renderer* rend;
+    TTF_Font* font;
+    Mouse m;
+    Screen* testScreen;
+    Project* project;
+    SDL_Texture* tileMapTexture;
+    int primaryTile, secondaryTile;
+    void** buttonParameters;
 };
 
-// deallocates all memory allocated for the screen
-void destroyScreen(Screen* screen) {
-    screen->destroyLists();
-    screen->freeCompParams();
-    delete screen;
-}
+// abstraction to make adding components easier
+void addButton(GameState* state, SDL_Surface* surf, int x, int y, void (*func)(Button*, void**), const char* label, SDL_Color color);
+void addTextbox(GameState* state, int x, int y, const char* label, uint textboxType = TextBoxType_ANY_TEXT, int maxCharLength = 10, int minimumWidth = 50);
+
+// screen construction functions
+void makeMenuScreen(void* state);
+void makeEditScreen(void* state);
+void makeCreateProjectScreen(void* state);
+
+// file selector functions
+void openProject(void* userData, const char* const* fileList, int filter);
+void addTilemapDirectory(void* userData, const char* const* fileList, int filter);
 
 #endif
